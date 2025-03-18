@@ -1,8 +1,7 @@
-import React, { createContext, useState, useCallback, useContext } from "react";
+import { useCallback, useContext, useState } from "react";
 import adminService from "../services/adminService";
-import { useAuth } from "./AuthContext";
-
-export const AdminContext = createContext(null);
+import { useAuth } from "./AuthProvider";
+import { AdminContext } from "./AppContext";
 
 export const AdminProvider = ({ children }) => {
   const { isAuthenticated, user } = useAuth();
@@ -109,6 +108,5 @@ export const AdminProvider = ({ children }) => {
   return <AdminContext.Provider value={value}>{children}</AdminContext.Provider>;
 };
 
-// Custom hook for easier context use
 export const useAdmin = () => useContext(AdminContext);
 export default AdminProvider;

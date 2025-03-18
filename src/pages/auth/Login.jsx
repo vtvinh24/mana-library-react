@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
-import { FaUser, FaLock } from "react-icons/fa";
+import React, { useEffect, useState } from "react";
+import { FaLock, FaUser } from "react-icons/fa";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthProvider";
 
 const Login = () => {
   const [credentials, setCredentials] = useState({ email: "", password: "" });

@@ -1,12 +1,12 @@
-import { useState, useEffect } from "react";
-import { useBook } from "../../context/BookContext";
+import { useState, useEffect, useContext } from "react";
+import BookContext from "../../context/BookProvider";
 import BookCard from "../../components/BookCard";
 import Spinner from "../../components/Spinner";
 import Pagination from "../../components/common/Pagination";
 import { FaHeart } from "react-icons/fa";
 
 const Favorites = () => {
-  const { books, loading, error, getBooks } = useBook();
+  const { books, loading, error, getBooks } = useContext(BookContext);
   const [favorites, setFavorites] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [booksPerPage] = useState(8);

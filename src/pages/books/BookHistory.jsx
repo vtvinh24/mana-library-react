@@ -1,164 +1,35 @@
-import { useState, useEffect } from "react";
-import { FaSearch, FaSort, FaFilePdf } from "react-icons/fa";
+import { useState, useEffect, useContext } from "react";
+import { Link } from "react-router-dom";
+import { FaBook, FaBookmark, FaHistory, FaClock } from "react-icons/fa";
 import Spinner from "../../components/Spinner";
-import Pagination from "../../components/common/Pagination";
+import BookContext from "../../context/BookProvider";
 
-const BookHistory = () => {
-  const [history, setHistory] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [sortConfig, setSortConfig] = useState({ key: "borrowedDate", direction: "desc" });
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+const MyBooksPage = () => {
+  const { borrowedBooks, reservedBooks, loading, error, getBorrowedBooks, getReservedBooks } = useContext(BookContext);
+  const [favorites, setFavorites] = useState([]);
+  const [recentActivity, setRecentActivity] = useState([]);
 
   useEffect(() => {
-    const fetchHistory = async () => {
-      try {
-        // In a real application, this would be an API call
-        // For demonstration, we're using mock data
-        setTimeout(() => {
-          const mockHistory = [
-            {
-              id: "1",
-              title: "To Kill a Mockingbird",
-              author: "Harper Lee",
-              borrowedDate: new Date(2025, 0, 15),
-              returnedDate: new Date(2025, 1, 10),
-              status: "returned",
-            },
-            {
-              id: "2",
-              title: "1984",
-              author: "George Orwell",
-              borrowedDate: new Date(2024, 11, 5),
-              returnedDate: new Date(2025, 0, 2),
-              status: "returned",
-            },
-            {
-              id: "3",
-              title: "The Great Gatsby",
-              author: "F. Scott Fitzgerald",
-              borrowedDate: new Date(2024, 10, 20),
-              returnedDate: new Date(2024, 11, 18),
-              status: "returned",
-            },
-            {
-              id: "4",
-              title: "Pride and Prejudice",
-              author: "Jane Austen",
-              borrowedDate: new Date(2024, 9, 8),
-              returnedDate: new Date(2024, 10, 5),
-              status: "returned",
-            },
-            {
-              id: "5",
-              title: "The Catcher in the Rye",
-              author: "J.D. Salinger",
-              borrowedDate: new Date(2024, 8, 12),
-              returnedDate: new Date(2024, 9, 10),
-              status: "returned",
-            },
-            {
-              id: "6",
-              title: "Brave New World",
-              author: "Aldous Huxley",
-              borrowedDate: new Date(2024, 7, 25),
-              returnedDate: new Date(2024, 8, 22),
-              status: "returned",
-            },
-            {
-              id: "7",
-              title: "The Hobbit",
-              author: "J.R.R. Tolkien",
-              borrowedDate: new Date(2024, 6, 18),
-              returnedDate: new Date(2024, 7, 15),
-              status: "returned",
-            },
-            {
-              id: "8",
-              title: "The Lord of the Rings",
-              author: "J.R.R. Tolkien",
-              borrowedDate: new Date(2024, 5, 10),
-              returnedDate: new Date(2024, 6, 8),
-              status: "returned",
-            },
-            {
-              id: "9",
-              title: "Animal Farm",
-              author: "George Orwell",
-              borrowedDate: new Date(2024, 4, 5),
-              returnedDate: new Date(2024, 5, 3),
-              status: "returned",
-            },
-            {
-              id: "10",
-              title: "The Alchemist",
-              author: "Paulo Coelho",
-              borrowedDate: new Date(2024, 3, 20),
-              returnedDate: new Date(2024, 4, 18),
-              status: "returned",
-            },
-            {
-              id: "11",
-              title: "The Odyssey",
-              author: "Homer",
-              borrowedDate: new Date(2024, 2, 15),
-              returnedDate: new Date(2024, 3, 12),
-              status: "returned",
-            },
-            {
-              id: "12",
-              title: "Don Quixote",
-              author: "Miguel de Cervantes",
-              borrowedDate: new Date(2024, 1, 8),
-              returnedDate: new Date(2024, 2, 5),
-              status: "returned",
-            },
-          ];
+    const fetchData = async () => {
+      await Promise.all([getBorrowedBooks(), getReservedBooks()]);
 
-          setHistory(mockHistory);
-          setLoading(false);
-        }, 800); // Simulate loading delay
-      } catch (error) {
-        console.error("Failed to fetch history:", error);
-        setLoading(false);
-      }
+      // Get favorites from localStorage (in a real app, this would come from an API)
+      const storedFavorites = JSON.parse(localStorage.getItem("favorites") || "[]");
+      setFavorites(storedFavorites);
+
+      // Simulate recent activity (in a real app, this would come from an API)
+      // This is just placeholder data
+      setRecentActivity([
+        { type: "borrowed", title: "The Great Gatsby", date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) },
+        { type: "returned", title: "To Kill a Mockingbird", date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+        { type: "favorite", title: "1984", date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) },
+      ]);
     };
 
-    fetchHistory();
-  }, []);
+    fetchData();
+  }, [getBorrowedBooks, getReservedBooks]);
 
-  const requestSort = (key) => {
-    let direction = "asc";
-    if (sortConfig.key === key && sortConfig.direction === "asc") {
-      direction = "desc";
-    }
-    setSortConfig({ key, direction });
-  };
-
-  const sortedData = [...history].sort((a, b) => {
-    if (a[sortConfig.key] < b[sortConfig.key]) {
-      return sortConfig.direction === "asc" ? -1 : 1;
-    }
-    if (a[sortConfig.key] > b[sortConfig.key]) {
-      return sortConfig.direction === "asc" ? 1 : -1;
-    }
-    return 0;
-  });
-
-  const filteredData = sortedData.filter((item) => item.title.toLowerCase().includes(searchTerm.toLowerCase()) || item.author.toLowerCase().includes(searchTerm.toLowerCase()));
-
-  // Get current items
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = filteredData.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-
-  const exportToPDF = () => {
-    alert("Export to PDF functionality would be implemented here");
-    // In a real app, this would generate and download a PDF of the history
-  };
-
+  // Fixed loading check to safely handle null/undefined values
   if (loading) {
     return (
       <div className="flex justify-center my-8">
@@ -169,119 +40,125 @@ const BookHistory = () => {
 
   return (
     <div className="container mx-auto p-4">
-      <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4 sm:mb-0">My Borrowing History</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">My Books Dashboard</h1>
 
-        <div className="flex space-x-2">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search books..."
-              className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <FaSearch className="absolute left-3 top-3 text-gray-400" />
+      {error && <div className="p-4 mb-4 bg-red-100 text-red-700 rounded-md">{error}</div>}
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <Link
+          to="/my-books/borrowed"
+          className="block"
+        >
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center">
+              <div className="p-3 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 mr-4">
+                <FaBook size={24} />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Currently Borrowed</p>
+                <p className="text-2xl font-bold text-gray-700 dark:text-gray-200">{borrowedBooks?.length || 0} books</p>
+              </div>
+            </div>
           </div>
+        </Link>
 
-          <button
-            onClick={exportToPDF}
-            className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md flex items-center"
+        <Link
+          to="/my-books/reserved"
+          className="block"
+        >
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center">
+              <div className="p-3 rounded-full bg-yellow-100 dark:bg-yellow-900 text-yellow-600 dark:text-yellow-300 mr-4">
+                <FaClock size={24} />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Reserved</p>
+                <p className="text-2xl font-bold text-gray-700 dark:text-gray-200">{reservedBooks?.length || 0} books</p>
+              </div>
+            </div>
+          </div>
+        </Link>
+
+        <Link
+          to="/my-books/favorites"
+          className="block"
+        >
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center">
+              <div className="p-3 rounded-full bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300 mr-4">
+                <FaBookmark size={24} />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Favorites</p>
+                <p className="text-2xl font-bold text-gray-700 dark:text-gray-200">{favorites?.length || 0} books</p>
+              </div>
+            </div>
+          </div>
+        </Link>
+      </div>
+
+      {/* Quick Links */}
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 mb-8">
+        <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">Quick Links</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+          <Link
+            to="/my-books/borrowed"
+            className="p-3 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-md flex items-center hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
           >
-            <FaFilePdf className="mr-2" /> Export
-          </button>
+            <FaBook className="mr-2" /> My Borrowed Books
+          </Link>
+          <Link
+            to="/my-books/reserved"
+            className="p-3 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-md flex items-center hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          >
+            <FaClock className="mr-2" /> My Reserved Books
+          </Link>
+          <Link
+            to="/favorites"
+            className="p-3 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-md flex items-center hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          >
+            <FaBookmark className="mr-2" /> My Favorites
+          </Link>
+          <Link
+            to="/my-books/history"
+            className="p-3 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-md flex items-center hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          >
+            <FaHistory className="mr-2" /> Borrowing History
+          </Link>
         </div>
       </div>
 
-      {filteredData.length > 0 ? (
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
-            <thead className="bg-gray-100 dark:bg-gray-700">
-              <tr>
-                <th className="py-3 px-4 text-left font-semibold text-gray-700 dark:text-gray-200">
-                  <button
-                    onClick={() => requestSort("title")}
-                    className="flex items-center"
-                  >
-                    Book Title{" "}
-                    <FaSort
-                      className="ml-1"
-                      size={12}
-                    />
-                  </button>
-                </th>
-                <th className="py-3 px-4 text-left font-semibold text-gray-700 dark:text-gray-200">
-                  <button
-                    onClick={() => requestSort("author")}
-                    className="flex items-center"
-                  >
-                    Author{" "}
-                    <FaSort
-                      className="ml-1"
-                      size={12}
-                    />
-                  </button>
-                </th>
-                <th className="py-3 px-4 text-left font-semibold text-gray-700 dark:text-gray-200">
-                  <button
-                    onClick={() => requestSort("borrowedDate")}
-                    className="flex items-center"
-                  >
-                    Borrowed Date{" "}
-                    <FaSort
-                      className="ml-1"
-                      size={12}
-                    />
-                  </button>
-                </th>
-                <th className="py-3 px-4 text-left font-semibold text-gray-700 dark:text-gray-200">
-                  <button
-                    onClick={() => requestSort("returnedDate")}
-                    className="flex items-center"
-                  >
-                    Returned Date{" "}
-                    <FaSort
-                      className="ml-1"
-                      size={12}
-                    />
-                  </button>
-                </th>
-                <th className="py-3 px-4 text-left font-semibold text-gray-700 dark:text-gray-200">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {currentItems.map((item) => (
-                <tr
-                  key={item.id}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                >
-                  <td className="py-4 px-4 text-gray-800 dark:text-gray-200">{item.title}</td>
-                  <td className="py-4 px-4 text-gray-800 dark:text-gray-200">{item.author}</td>
-                  <td className="py-4 px-4 text-gray-600 dark:text-gray-400">{item.borrowedDate.toLocaleDateString()}</td>
-                  <td className="py-4 px-4 text-gray-600 dark:text-gray-400">{item.returnedDate.toLocaleDateString()}</td>
-                  <td className="py-4 px-4">
-                    <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">{item.status === "returned" ? "Returned" : item.status}</span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          <div className="mt-6">
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
-            />
-          </div>
-        </div>
-      ) : (
-        <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow text-center">
-          <p className="text-gray-500 dark:text-gray-400">{searchTerm ? "No results match your search." : "You have no borrowing history yet."}</p>
-        </div>
-      )}
+      {/* Recent Activity */}
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
+        <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">Recent Activity</h2>
+        {recentActivity && recentActivity.length > 0 ? (
+          <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+            {recentActivity.map((activity, index) => (
+              <li
+                key={index}
+                className="py-3"
+              >
+                <div className="flex items-center">
+                  {activity.type === "borrowed" && <span className="inline-flex bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs px-2 py-1 rounded mr-3">Borrowed</span>}
+                  {activity.type === "returned" && <span className="inline-flex bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs px-2 py-1 rounded mr-3">Returned</span>}
+                  {activity.type === "favorite" && <span className="inline-flex bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 text-xs px-2 py-1 rounded mr-3">Favorited</span>}
+                  <div>
+                    <p className="font-medium text-gray-800 dark:text-gray-200">{activity.title}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      {activity.date.toLocaleDateString()} · {activity.date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    </p>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-gray-500 dark:text-gray-400">No recent activity found.</p>
+        )}
+      </div>
     </div>
   );
 };
 
-export default BookHistory;
+export default MyBooksPage;

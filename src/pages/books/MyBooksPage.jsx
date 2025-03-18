@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { Link } from "react-router-dom";
-import { useBook } from "../../context/BookContext";
 import { FaBook, FaBookmark, FaHistory, FaClock } from "react-icons/fa";
 import Spinner from "../../components/Spinner";
+import BookContext from "../../context/BookProvider";
 
 const MyBooksPage = () => {
-  const { borrowedBooks, reservedBooks, loading, error, getBorrowedBooks, getReservedBooks } = useBook();
+  const { borrowedBooks, reservedBooks, loading, error, getBorrowedBooks, getReservedBooks } = useContext(BookContext);
   const [favorites, setFavorites] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
 
@@ -80,7 +80,7 @@ const MyBooksPage = () => {
         </Link>
 
         <Link
-          to="/favorites"
+          to="/my-books/favorites"
           className="block"
         >
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700">

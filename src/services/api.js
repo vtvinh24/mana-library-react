@@ -1,7 +1,7 @@
 import axios from "axios";
-import authService, { tokenManager } from "./authService";
+import authService from "./authService";
 
-// should read env instead
+// Environment variable for server URL (should ideally come from .env)
 const SERVER_URL = "http://localhost:8000";
 
 const api = axios.create({
@@ -12,10 +12,10 @@ const api = axios.create({
   timeout: 60000,
 });
 
-// include token in the request headers
+// Request interceptor to add authentication token
 api.interceptors.request.use(
   (config) => {
-    const token = getToken();
+    const token = authService.tokenManager.getToken();
     if (token) {
       config.headers["Authorization"] = `Bearer ${token}`;
     }
@@ -26,40 +26,41 @@ api.interceptors.request.use(
   }
 );
 
-// handle response errors
+// Response interceptor to handle token refresh on 401 errors
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    // on network error
+    // Handle network errors
     if (!error.response) {
       return Promise.reject({
-        message: "Network error.",
+        message: "Network error. Please check your connection.",
         isNetworkError: true,
       });
     }
 
-    // 401: Unauthorized
+    // Handle unauthorized errors - try to refresh token
     if (error.response.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true; // avoid infinite loops
+      originalRequest._retry = true;
+
       try {
-        // if refresh token is expired, logout
+        // Check if refresh token is expired
         if (authService.isRefreshTokenExpired()) {
           authService.logout();
           return Promise.reject({
             message: "Your session has expired. Please log in again.",
             isAuthError: true,
           });
-        } else {
-          // if refresh token is valid, get a new access token
-          const response = await authService.refreshToken();
-          tokenManager.setToken(response.accessToken);
-          originalRequest.headers["Authorization"] = `Bearer ${response.accessToken}`;
-          return api(originalRequest);
         }
+
+        // If refresh token is valid, get a new access token
+        const response = await authService.refreshToken();
+        authService.tokenManager.setToken(response.accessToken);
+        originalRequest.headers["Authorization"] = `Bearer ${response.accessToken}`;
+        return api(originalRequest);
       } catch (refreshError) {
-        // Only logout if the refresh token is invalid or expired
+        // Only logout if refresh token is invalid
         if (refreshError.response?.status === 401) {
           authService.logout();
           return Promise.reject({
@@ -71,27 +72,22 @@ api.interceptors.response.use(
       }
     }
 
-    // Handle server errors (5xx)
-    else if (error.response.status >= 500) {
+    // Handle server errors
+    if (error.response.status >= 500) {
       return Promise.reject({
-        message: "Server error.",
+        message: "Server error. Please try again later.",
         isServerError: true,
         status: error.response.status,
         data: error.response.data,
       });
     }
 
-    // Handle other client errors (4xx)
-    else if (error.response.status >= 400) {
-      return Promise.reject({
-        message: error.response.data?.message || "Request failed.",
-        status: error.response.status,
-        data: error.response.data,
-      });
-    }
-
-    // Handle all other errors
-    return Promise.reject(error);
+    // Handle client errors
+    return Promise.reject({
+      message: error.response.data?.message || "Request failed.",
+      status: error.response.status,
+      data: error.response.data,
+    });
   }
 );
 

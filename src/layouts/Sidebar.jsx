@@ -1,6 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { FaBook, FaUser, FaExchangeAlt, FaChartBar, FaCog, FaSearch, FaBookmark, FaHeart, FaBell, FaUserCircle, FaFileImport, FaFileExport, FaClipboardList, FaHistory } from "react-icons/fa";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/AuthProvider";
 
 // const Sidebar = ({ role: propRole }) => {
 const Sidebar = ({ isOpen }) => {
@@ -10,11 +10,11 @@ const Sidebar = ({ isOpen }) => {
   const role = "admin";
 
   if (!isOpen) {
-    return <aside className="w-16 bg-white dark:bg-gray-800 shadow-lg p-2 h-full transition-all duration-300">{/* Collapsed icons-only sidebar version could go here */}</aside>;
+    return <aside className="w-16 bg-white dark:bg-gray-800 shadow-lg p-2 h-full transition-all duration-300"></aside>;
   }
 
   return (
-    <aside className="w-64 bg-white dark:bg-gray-800 shadow-lg p-4 h-full transition-all duration-300">
+    <aside className="w-64 bg-white dark:bg-gray-800 shadow-lg p-4 h-full transition-all duration-300 overflow-y-auto">
       <nav className="space-y-2">
         {/* Common links for all users */}
         <div className="sidebar-heading">Books</div>

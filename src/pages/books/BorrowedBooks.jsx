@@ -1,12 +1,12 @@
-import { useState, useEffect } from "react";
-import { useBook } from "../../context/BookContext";
+import { useState, useEffect, useContext } from "react";
 import BookCard from "../../components/BookCard";
 import Spinner from "../../components/Spinner";
 import Pagination from "../../components/common/Pagination";
 import { FaUndo } from "react-icons/fa";
+import BookContext from "../../context/BookProvider";
 
 const BorrowedBooks = () => {
-  const { borrowedBooks, loading, error, getBorrowedBooks, returnBook } = useBook();
+  const { borrowedBooks, loading, error, getBorrowedBooks, returnBook } = useContext(BookContext);
   const [currentPage, setCurrentPage] = useState(1);
   const [booksPerPage] = useState(8);
 
@@ -37,7 +37,8 @@ const BorrowedBooks = () => {
     setCurrentPage(pageNumber);
   };
 
-  if (loading && borrowedBooks.length === 0) {
+  // Render loading spinner if still loading and no books available yet
+  if (loading) {
     return (
       <div className="flex justify-center my-8">
         <Spinner />
@@ -51,7 +52,12 @@ const BorrowedBooks = () => {
 
       {error && <div className="p-4 mb-4 bg-red-100 text-red-700 rounded-md">{error}</div>}
 
-      {borrowedBooks && borrowedBooks.length > 0 ? (
+      {!borrowedBooks || borrowedBooks.length === 0 ? (
+        <div className="text-center p-8 bg-gray-50 dark:bg-gray-800 rounded-lg shadow-sm">
+          <p className="text-gray-500 dark:text-gray-400">You have no borrowed books at the moment.</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">Books you borrow from the library will appear here.</p>
+        </div>
+      ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {currentBooks.map((book) => (
@@ -78,10 +84,6 @@ const BorrowedBooks = () => {
             onPageChange={handlePageChange}
           />
         </>
-      ) : (
-        <div className="text-center p-8">
-          <p className="text-gray-500 dark:text-gray-400">You have no borrowed books at the moment.</p>
-        </div>
       )}
     </div>
   );

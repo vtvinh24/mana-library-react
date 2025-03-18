@@ -4,7 +4,7 @@ import Header from "./Header";
 import Footer from "./Footer";
 import Breadcrumbs from "../components/Breadcrumbs";
 import { useTheme } from "../hooks/useTheme";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/AuthProvider";
 
 const MainLayout = ({ children }) => {
   const { dark, setDark } = useTheme();

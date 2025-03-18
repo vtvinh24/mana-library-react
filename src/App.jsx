@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useState } from "react";
 import { BrowserRouter, Route, Routes, Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "./context/AuthContext";
+import { useAuth } from "./context/AuthProvider";
 import Spinner from "./components/Spinner";
 import "./index.css";
 import NotFound from "./routes/NotFound";
@@ -11,7 +11,6 @@ import ForgotPassword from "./pages/auth/ForgotPassword";
 import VerifyCode from "./pages/auth/VerifyCode";
 import TwoFactorSetup from "./pages/auth/TwoFactorSetup";
 import TwoFactorAuth from "./pages/auth/TwoFactorAuth";
-import { useTheme } from "./hooks/useTheme";
 import MainLayout from "./layouts/MainLayout";
 import Home from "./pages/Home";
 import BooksPage from "./pages/books/BooksPage";

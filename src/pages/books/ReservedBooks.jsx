@@ -1,12 +1,12 @@
-import { useState, useEffect } from "react";
-import { useBook } from "../../context/BookContext";
+import { useState, useEffect, useContext } from "react";
 import BookCard from "../../components/BookCard";
 import Spinner from "../../components/Spinner";
 import Pagination from "../../components/common/Pagination";
 import { FaTimes } from "react-icons/fa";
+import BookContext from "../../context/BookProvider";
 
 const ReservedBooks = () => {
-  const { reservedBooks, loading, error, getReservedBooks, cancelReservation } = useBook();
+  const { reservedBooks, loading, error, getReservedBooks, cancelReservation } = useContext(BookContext);
   const [currentPage, setCurrentPage] = useState(1);
   const [booksPerPage] = useState(8);
 

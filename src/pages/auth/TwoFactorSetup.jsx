@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaShieldAlt, FaKey } from "react-icons/fa";
 import authService from "../../services/authService";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/AuthProvider";
 import Spinner from "../../components/Spinner";
 
 const TwoFactorSetup = () => {
