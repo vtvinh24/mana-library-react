@@ -15,6 +15,9 @@ const BookDetailPage = () => {
   const [message, setMessage] = useState(null);
   const [isFavorite, setIsFavorite] = useState(false);
   const [imageError, setImageError] = useState(false);
+  // Add local states to track book status immediately after user actions
+  const [localBorrowed, setLocalBorrowed] = useState(false);
+  const [localReserved, setLocalReserved] = useState(false);
 
   // Get book details on mount
   useEffect(() => {
@@ -28,9 +31,24 @@ const BookDetailPage = () => {
     const storedFavorites = JSON.parse(localStorage.getItem("favorites") || "[]");
     setIsFavorite(storedFavorites.includes(bookId));
 
-    // Reset image error state when book ID changes
+    // Reset image error state and local status when book ID changes
     setImageError(false);
+    setLocalBorrowed(false);
+    setLocalReserved(false);
   }, [bookId, getBook]);
+
+  // Set initial local borrowed/reserved state based on context
+  useEffect(() => {
+    if (borrowedBooks && borrowedBooks.length > 0) {
+      const borrowed = borrowedBooks.some((item) => item.book && item.book._id === bookId);
+      setLocalBorrowed(borrowed);
+    }
+
+    if (reservedBooks && reservedBooks.length > 0) {
+      const reserved = reservedBooks.some((item) => item.book && item.book._id === bookId);
+      setLocalReserved(reserved);
+    }
+  }, [borrowedBooks, reservedBooks, bookId]);
 
   // Handle image loading error
   const handleImageError = () => {
@@ -48,6 +66,8 @@ const BookDetailPage = () => {
     try {
       const result = await borrowBook(bookId);
       if (result.success) {
+        // Update local state immediately
+        setLocalBorrowed(true);
         setMessage({
           type: "success",
           text: `Book borrowed successfully! Due date: ${new Date(result.dueDate).toLocaleDateString()}`,
@@ -81,6 +101,8 @@ const BookDetailPage = () => {
     try {
       const result = await reserveBook(bookId);
       if (result.success) {
+        // Update local state immediately
+        setLocalReserved(true);
         setMessage({
           type: "success",
           text: `Book reserved successfully! Reservation expires on: ${new Date(result.expiresAt).toLocaleDateString()}`,
@@ -130,14 +152,14 @@ const BookDetailPage = () => {
     setTimeout(() => setMessage(null), 3000);
   };
 
-  // Check if book is already borrowed by user
+  // Check if book is already borrowed by user (using both context and local state)
   const isBookBorrowed = () => {
-    return borrowedBooks.some((item) => item.book && item.book._id === bookId);
+    return localBorrowed || borrowedBooks.some((item) => item.book && item.book._id === bookId);
   };
 
-  // Check if book is already reserved by user
+  // Check if book is already reserved by user (using both context and local state)
   const isBookReserved = () => {
-    return reservedBooks.some((item) => item.book && item.book._id === bookId);
+    return localReserved || reservedBooks.some((item) => item.book && item.book._id === bookId);
   };
 
   // Get action button based on book status and user's actions
@@ -180,10 +202,10 @@ const BookDetailPage = () => {
       return (
         <button
           onClick={handleReserve}
-          disabled={actionLoading}
-          className={`px-4 py-2 rounded-md text-white ${actionLoading ? "bg-gray-500 cursor-not-allowed" : "bg-yellow-600 hover:bg-yellow-700"}`}
+          disabled={true}
+          className={`px-4 py-2 rounded-md text-white bg-gray-500 cursor-not-allowed`}
         >
-          {actionLoading ? "Processing..." : "Reserve Book"}
+          Not Available
         </button>
       );
     }

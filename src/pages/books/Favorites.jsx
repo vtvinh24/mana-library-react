@@ -4,46 +4,68 @@ import { FaBook, FaArrowLeft, FaHeart, FaClock } from "react-icons/fa";
 import Spinner from "../../components/Spinner";
 import { useBook } from "../../context/BookProvider";
 import { useAuth } from "../../context/AuthProvider";
-import { useUser } from "../../context/UserProvider";
 
 const Favorites = () => {
   const { isAuthenticated } = useAuth();
-  const { favorites, getFavorites, removeFavorite, loading: userLoading } = useUser();
+  const { books, loading: booksLoading, getBooks } = useBook();
+  const [favorites, setFavorites] = useState([]);
   const [favoriteBooks, setFavoriteBooks] = useState([]);
   const [removing, setRemoving] = useState(null);
   const [message, setMessage] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch user's favorite books from API
+  // Fetch all books and filter by favorites from localStorage
   useEffect(() => {
-    const fetchFavorites = async () => {
-      if (isAuthenticated) {
-        try {
-          setLoading(true);
-          await getFavorites();
-        } catch (err) {
-          console.error("Error fetching favorites:", err);
-          setMessage({
-            type: "error",
-            text: "Failed to load favorite books. Please try again later.",
-          });
-        } finally {
-          setLoading(false);
+    const fetchBooks = async () => {
+      try {
+        setLoading(true);
+        // Get favorite IDs from localStorage
+        const storedFavorites = JSON.parse(localStorage.getItem("favorites") || "[]");
+        setFavorites(storedFavorites);
+
+        if (storedFavorites.length > 0) {
+          // Fetch all books to get details for favorites
+          await getBooks();
         }
+      } catch (err) {
+        console.error("Error fetching books:", err);
+        setMessage({
+          type: "error",
+          text: "Failed to load favorite books. Please try again later.",
+        });
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchFavorites();
-  }, [isAuthenticated, getFavorites]);
+    fetchBooks();
+  }, [getBooks]);
+
+  // Match favorite IDs with book details
+  useEffect(() => {
+    if (books && books.length > 0 && favorites.length > 0) {
+      const bookDetails = books.filter((book) => favorites.includes(book._id));
+      setFavoriteBooks(bookDetails);
+    } else {
+      setFavoriteBooks([]);
+    }
+  }, [books, favorites]);
 
   // Handle removing a book from favorites
-  const handleRemoveFromFavorites = async (bookId) => {
-    if (!isAuthenticated) return;
-
+  const handleRemoveFromFavorites = (bookId) => {
     setRemoving(bookId);
     try {
-      // Call the API to remove from favorites
-      await removeFavorite(bookId);
+      // Get current favorites from localStorage
+      const storedFavorites = JSON.parse(localStorage.getItem("favorites") || "[]");
+
+      // Remove the book ID from favorites
+      const updatedFavorites = storedFavorites.filter((id) => id !== bookId);
+
+      // Update localStorage
+      localStorage.setItem("favorites", JSON.stringify(updatedFavorites));
+
+      // Update state
+      setFavorites(updatedFavorites);
 
       setMessage({
         type: "success",
@@ -64,10 +86,10 @@ const Favorites = () => {
     }
   };
 
-  const isLoading = loading || userLoading;
+  const isLoading = loading || booksLoading;
 
   // Show loading spinner when initially loading
-  if (isLoading && (!favorites || favorites.length === 0)) {
+  if (isLoading) {
     return (
       <div className="flex justify-center my-8">
         <Spinner size="lg" />
@@ -98,9 +120,9 @@ const Favorites = () => {
         </div>
       )}
 
-      {favorites && favorites.length > 0 ? (
+      {favoriteBooks && favoriteBooks.length > 0 ? (
         <div className="grid grid-cols-1 gap-4">
-          {favorites.map((book) => (
+          {favoriteBooks.map((book) => (
             <div
               key={book._id}
               className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden border border-gray-200 dark:border-gray-700"
@@ -170,14 +192,14 @@ const Favorites = () => {
                       {removing === book._id ? "Removing..." : "Remove from Favorites"}
                     </button>
 
-                    {book.status === "available" && (
+                    {/* {book.status === "available" && (
                       <Link
                         to={`/books?reserve=${book._id}`}
                         className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md"
                       >
                         Reserve
                       </Link>
-                    )}
+                    )} */}
                   </div>
                 </div>
               </div>

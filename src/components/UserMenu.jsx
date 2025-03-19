@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthProvider";
-import { FaUser, FaSignOutAlt, FaCog } from "react-icons/fa";
+import { FaUser, FaSignOutAlt } from "react-icons/fa";
+import ThemeButton from "./ThemeButton";
+import { useTheme } from "../hooks/useTheme";
 
 const UserMenu = ({ user }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const { dark, setDark } = useTheme();
   const { logout } = useAuth();
 
   return (
@@ -26,24 +28,20 @@ const UserMenu = ({ user }) => {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl z-10 border border-gray-200 dark:border-gray-700 overflow-hidden animate-fadeIn">
+        <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-xl z-10 border border-gray-200 dark:border-gray-700 overflow-hidden animate-fadeIn">
           <div className="p-3 border-b border-gray-200 dark:border-gray-700">
-            <p className="font-semibold text-sm text-gray-700 dark:text-gray-300">{user?.fullName || "Signed in user"}</p>
+            <p className="font-semibold text-gray-700 dark:text-gray-300">{user?.fullName || "Signed in user"}</p>
+            {user?.email && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{user.email}</p>}
+            {user?.phone && <p className="text-xs text-gray-500 dark:text-gray-400">{user.phone}</p>}
           </div>
           <div className="py-1">
-            <Link
-              to="/profile"
-              className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
-            >
-              <FaUser className="mr-3 text-gray-500 dark:text-gray-400" /> Profile
-              {JSON.stringify(user)}
-            </Link>
-            <Link
-              to="/settings"
-              className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
-            >
-              <FaCog className="mr-3 text-gray-500 dark:text-gray-400" /> Settings
-            </Link>
+            <div className="px-4 py-2 flex items-center justify-between">
+              <span className="text-sm text-gray-700 dark:text-gray-300">{dark ? "Dark Mode" : "Light Mode"}</span>
+              <ThemeButton
+                dark={dark}
+                setDark={setDark}
+              />
+            </div>
             <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
             <button
               onClick={logout}

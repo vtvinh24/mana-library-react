@@ -97,30 +97,30 @@ const BookCard = ({ book, isFavorite, onToggleFavorite, onReserve, isAvailable }
           )}
 
           {/* Reserve Button (only for borrowed books) */}
-          {book.status === "borrowed" && onReserve && (
-            <div className="mt-auto pt-3">
-              {/* <button
+          {/* {book.status === "borrowed" && onReserve && (
+            <div className="mt-auto pt-3"> */}
+          {/* <button
                 onClick={handleReserve}
                 className="w-full bg-yellow-500 hover:bg-yellow-600 text-white py-1 px-3 rounded text-sm font-medium transition-colors"
               >
                 Reserve
               </button> */}
-              {/* A disabled button labeled Borrowed*/}
-              <button
+          {/* A disabled button labeled Borrowed*/}
+          {/* <button
                 disabled
                 className="w-full bg-gray-700 text-white py-1 px-3 rounded text-sm font-medium"
               >
                 Borrowed
               </button>
             </div>
-          )}
+          )} */}
 
           {/* Borrow Now Button (only for available books) */}
-          {isAvailable && book.status === "available" && (
+          {/* {isAvailable && book.status === "available" && (
             <div className="mt-auto pt-3">
-              <span className="block w-full bg-blue-600 text-center text-white py-1 px-3 rounded text-sm font-medium">View Details</span>
+              <span className="block w-full bg-blue-600 text-center text-white py-1 px-3 rounded text-sm font-medium">Available</span>
             </div>
-          )}
+          )} */}
         </div>
       </div>
     </Link>

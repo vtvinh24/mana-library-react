@@ -8,6 +8,7 @@ const BorrowedBooks = () => {
   const { borrowedBooks, loading, error, getBorrowedBooks, returnBook } = useBook();
   const [returningBook, setReturningBook] = useState(null);
   const [returnMessage, setReturnMessage] = useState(null);
+  const [returnedBooks, setReturnedBooks] = useState([]);
 
   useEffect(() => {
     const fetchBooks = async () => {
@@ -34,6 +35,7 @@ const BorrowedBooks = () => {
     try {
       const result = await returnBook(bookId);
       if (result.success) {
+        setReturnedBooks((prev) => [...prev, bookId]);
         setReturnMessage({
           type: "success",
           text: result.lateFee > 0 ? `Book returned successfully. Late fee: $${result.lateFee.toFixed(2)}` : "Book returned successfully.",
@@ -96,13 +98,13 @@ const BorrowedBooks = () => {
         <div className="grid grid-cols-1 gap-4">
           {borrowedBooks.map((item) => (
             <div
-              key={item.book._id}
+              key={item && item.book ? item.book._id : `item-${Math.random()}`}
               className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden border border-gray-200 dark:border-gray-700"
             >
               <div className="p-4 md:p-6 flex flex-col md:flex-row">
                 {/* Book cover image */}
                 <div className="w-full md:w-32 h-48 md:h-auto mb-4 md:mb-0 md:mr-6 flex-shrink-0">
-                  {item.book.coverImage ? (
+                  {item && item.book && item.book.coverImage ? (
                     <img
                       src={item.book.coverImage}
                       alt={`Cover of ${item.book.title}`}
@@ -120,20 +122,20 @@ const BorrowedBooks = () => {
 
                 {/* Book details */}
                 <div className="flex-grow">
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{item.book.title}</h3>
-                  <p className="text-gray-600 dark:text-gray-300 mb-1">by {item.book.author}</p>
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{item && item.book ? item.book.title : "Loading book title..."}</h3>
+                  <p className="text-gray-600 dark:text-gray-300 mb-1">by {item && item.book ? item.book.author : "Loading author..."}</p>
 
                   <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-2">
                     <div className="flex items-center">
                       <span className="text-gray-500 dark:text-gray-400 mr-2">Borrowed on:</span>
-                      <span className="font-medium">{formatDate(item.borrowDate)}</span>
+                      <span className="font-medium">{item && item.borrowDate ? formatDate(item.borrowDate) : "Loading..."}</span>
                     </div>
 
                     <div className="flex items-center">
                       <span className="text-gray-500 dark:text-gray-400 mr-2">Due date:</span>
-                      <span className={`font-medium flex items-center ${isOverdue(item.dueDate) ? "text-red-600 dark:text-red-400" : ""}`}>
-                        {formatDate(item.dueDate)}
-                        {isOverdue(item.dueDate) && (
+                      <span className={`font-medium flex items-center ${item && item.dueDate && isOverdue(item.dueDate) ? "text-red-600 dark:text-red-400" : ""}`}>
+                        {item && item.dueDate ? formatDate(item.dueDate) : "Loading..."}
+                        {item && item.dueDate && isOverdue(item.dueDate) && (
                           <FaExclamationCircle
                             className="ml-1 text-red-600 dark:text-red-400"
                             title="Overdue"
@@ -146,23 +148,25 @@ const BorrowedBooks = () => {
                   <div className="flex items-center mt-4">
                     <FaCalendarAlt className="text-gray-500 dark:text-gray-400 mr-2" />
                     <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {isOverdue(item.dueDate)
-                        ? `Overdue by ${Math.ceil((new Date() - new Date(item.dueDate)) / (1000 * 60 * 60 * 24))} days`
-                        : `${Math.ceil((new Date(item.dueDate) - new Date()) / (1000 * 60 * 60 * 24))} days remaining`}
+                      {item && item.dueDate
+                        ? isOverdue(item.dueDate)
+                          ? `Overdue by ${Math.ceil((new Date() - new Date(item.dueDate)) / (1000 * 60 * 60 * 24))} days`
+                          : `${Math.ceil((new Date(item.dueDate) - new Date()) / (1000 * 60 * 60 * 24))} days remaining`
+                        : "Calculating days..."}
                     </span>
                   </div>
 
                   <div className="mt-6">
                     <button
-                      onClick={() => handleReturnBook(item.book._id)}
-                      disabled={returningBook === item.book._id || returnMessage?.type === "success"}
+                      onClick={() => item && item.book && handleReturnBook(item.book._id)}
+                      disabled={!item || !item.book || returningBook === (item.book && item.book._id) || (item.book && returnedBooks.includes(item.book._id))}
                       className={`px-4 py-2 rounded-md text-white ${
-                        returningBook === item.book._id || returnMessage?.type === "success"
+                        !item || !item.book || returningBook === (item.book && item.book._id) || (item.book && returnedBooks.includes(item.book._id))
                           ? "bg-gray-500 cursor-not-allowed"
                           : "bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
                       }`}
                     >
-                      {returningBook === item.book._id ? "Processing..." : returnMessage?.type === "success" ? "Returned" : "Return Book"}
+                      {!item || !item.book ? "Loading..." : returningBook === item.book._id ? "Processing..." : returnedBooks.includes(item.book._id) ? "Returned" : "Return Book"}
                     </button>
                   </div>
                 </div>
