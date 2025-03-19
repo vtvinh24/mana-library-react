@@ -1,5 +1,5 @@
 import axios from "axios";
-import authService from "./authService";
+import authService, { tokenManager } from "./authService";
 
 // Environment variable for server URL (should ideally come from .env)
 const SERVER_URL = "http://localhost:8000";
@@ -15,7 +15,7 @@ const api = axios.create({
 // Request interceptor to add authentication token
 api.interceptors.request.use(
   (config) => {
-    const token = authService.tokenManager.getToken();
+    const token = tokenManager.getToken();
     if (token) {
       config.headers["Authorization"] = `Bearer ${token}`;
     }

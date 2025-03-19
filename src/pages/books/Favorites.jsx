@@ -1,100 +1,200 @@
-import { useState, useEffect, useContext } from "react";
-import BookContext from "../../context/BookProvider";
-import BookCard from "../../components/BookCard";
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { FaBook, FaArrowLeft, FaHeart, FaClock } from "react-icons/fa";
 import Spinner from "../../components/Spinner";
-import Pagination from "../../components/common/Pagination";
-import { FaHeart } from "react-icons/fa";
+import { useBook } from "../../context/BookProvider";
+import { useAuth } from "../../context/AuthProvider";
+import { useUser } from "../../context/UserProvider";
 
 const Favorites = () => {
-  const { books, loading, error, getBooks } = useContext(BookContext);
-  const [favorites, setFavorites] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [booksPerPage] = useState(8);
+  const { isAuthenticated } = useAuth();
+  const { favorites, getFavorites, removeFavorite, loading: userLoading } = useUser();
+  const [favoriteBooks, setFavoriteBooks] = useState([]);
+  const [removing, setRemoving] = useState(null);
+  const [message, setMessage] = useState(null);
+  const [loading, setLoading] = useState(true);
 
+  // Fetch user's favorite books from API
   useEffect(() => {
-    // In a real implementation, you would fetch favorites from an API
-    // For now, we'll simulate with localStorage
     const fetchFavorites = async () => {
-      // This would come from your backend in a real app
-      const storedFavorites = JSON.parse(localStorage.getItem("favorites") || "[]");
-
-      // If we have books loaded already, filter them by favorites
-      if (books && books.length > 0) {
-        const favoriteBooks = books.filter((book) => storedFavorites.includes(book._id));
-        setFavorites(favoriteBooks);
-      } else {
-        // Otherwise, load all books first
-        await getBooks();
+      if (isAuthenticated) {
+        try {
+          setLoading(true);
+          await getFavorites();
+        } catch (err) {
+          console.error("Error fetching favorites:", err);
+          setMessage({
+            type: "error",
+            text: "Failed to load favorite books. Please try again later.",
+          });
+        } finally {
+          setLoading(false);
+        }
       }
     };
 
     fetchFavorites();
-  }, [books, getBooks]);
+  }, [isAuthenticated, getFavorites]);
 
-  const handleToggleFavorite = (bookId) => {
-    const storedFavorites = JSON.parse(localStorage.getItem("favorites") || "[]");
+  // Handle removing a book from favorites
+  const handleRemoveFromFavorites = async (bookId) => {
+    if (!isAuthenticated) return;
 
-    // Remove from favorites
-    const updatedFavorites = storedFavorites.filter((id) => id !== bookId);
-    localStorage.setItem("favorites", JSON.stringify(updatedFavorites));
+    setRemoving(bookId);
+    try {
+      // Call the API to remove from favorites
+      await removeFavorite(bookId);
 
-    // Update the UI
-    setFavorites((prev) => prev.filter((book) => book._id !== bookId));
+      setMessage({
+        type: "success",
+        text: "Book removed from favorites.",
+      });
+    } catch (err) {
+      console.error("Failed to remove from favorites:", err);
+      setMessage({
+        type: "error",
+        text: "Failed to remove book from favorites.",
+      });
+    } finally {
+      setRemoving(null);
+      // Clear message after 5 seconds
+      setTimeout(() => {
+        setMessage(null);
+      }, 5000);
+    }
   };
 
-  // Get current books for pagination
-  const indexOfLastBook = currentPage * booksPerPage;
-  const indexOfFirstBook = indexOfLastBook - booksPerPage;
-  const currentBooks = favorites.slice(indexOfFirstBook, indexOfLastBook);
-  const totalPages = Math.ceil(favorites.length / booksPerPage);
+  const isLoading = loading || userLoading;
 
-  const handlePageChange = (pageNumber) => {
-    setCurrentPage(pageNumber);
-  };
-
-  if (loading && favorites.length === 0) {
+  // Show loading spinner when initially loading
+  if (isLoading && (!favorites || favorites.length === 0)) {
     return (
       <div className="flex justify-center my-8">
-        <Spinner />
+        <Spinner size="lg" />
       </div>
     );
   }
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">My Favorite Books</h1>
+      <div className="mb-6 flex justify-between items-center">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Favorite Books</h1>
+        <Link
+          to="/my-books"
+          className="flex items-center text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+        >
+          <FaArrowLeft className="mr-1" /> Back to My Books
+        </Link>
+      </div>
 
-      {error && <div className="p-4 mb-4 bg-red-100 text-red-700 rounded-md">{error}</div>}
+      {/* Message display */}
+      {message && (
+        <div
+          className={`p-4 mb-4 rounded-md ${
+            message.type === "success" ? "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-200" : "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-200"
+          }`}
+        >
+          {message.text}
+        </div>
+      )}
 
-      {favorites.length > 0 ? (
-        <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {currentBooks.map((book) => (
-              <div
-                key={book._id}
-                className="relative"
-              >
-                <BookCard
-                  book={book}
-                  isFavorite={true}
-                  onToggleFavorite={handleToggleFavorite}
-                />
-                <div className="absolute top-2 left-2 bg-red-600 text-white text-xs px-2 py-1 rounded flex items-center">
-                  <FaHeart className="mr-1" /> Favorite
+      {favorites && favorites.length > 0 ? (
+        <div className="grid grid-cols-1 gap-4">
+          {favorites.map((book) => (
+            <div
+              key={book._id}
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden border border-gray-200 dark:border-gray-700"
+            >
+              <div className="p-4 md:p-6 flex flex-col md:flex-row">
+                {/* Book cover image */}
+                <div className="flex-shrink-0 w-full md:w-48 h-48 mb-4 md:mb-0 md:mr-6 bg-gray-200 dark:bg-gray-700 overflow-hidden">
+                  {book.coverImage ? (
+                    <img
+                      src={book.coverImage}
+                      alt={`Cover of ${book.title}`}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <FaBook
+                        size={48}
+                        className="text-gray-400"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Book details */}
+                <div className="flex-grow">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{book.title}</h2>
+                  <p className="text-gray-700 dark:text-gray-300 mb-2">
+                    <span className="font-semibold">Author:</span> {book.author}
+                  </p>
+                  {book.isbn && (
+                    <p className="text-gray-700 dark:text-gray-300 mb-2">
+                      <span className="font-semibold">ISBN:</span> {book.isbn}
+                    </p>
+                  )}
+
+                  {/* Additional details and badges */}
+                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div className="flex items-center">
+                      <span className="text-gray-500 dark:text-gray-400 mr-2">Status:</span>
+                      <span
+                        className={`font-medium px-2 py-0.5 rounded-full text-sm ${
+                          book.status === "available"
+                            ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                            : book.status === "borrowed"
+                            ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                            : "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                        }`}
+                      >
+                        {book.status ? book.status.charAt(0).toUpperCase() + book.status.slice(1) : "Unknown"}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center">
+                      <span className="text-gray-500 dark:text-gray-400 mr-2">Added to favorites:</span>
+                      <span className="font-medium flex items-center">
+                        <FaHeart className="text-red-500 mr-1" />
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 flex flex-wrap gap-2">
+                    <button
+                      onClick={() => handleRemoveFromFavorites(book._id)}
+                      disabled={removing === book._id}
+                      className={`px-4 py-2 rounded-md text-white ${removing === book._id ? "bg-gray-500 cursor-not-allowed" : "bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800"}`}
+                    >
+                      {removing === book._id ? "Removing..." : "Remove from Favorites"}
+                    </button>
+
+                    {book.status === "available" && (
+                      <Link
+                        to={`/books?reserve=${book._id}`}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md"
+                      >
+                        Reserve
+                      </Link>
+                    )}
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
-
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
-          />
-        </>
+            </div>
+          ))}
+        </div>
       ) : (
-        <div className="text-center p-8">
-          <p className="text-gray-500 dark:text-gray-400">You haven't added any favorite books yet.</p>
+        <div className="text-center p-8 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+          <FaHeart className="mx-auto text-5xl text-red-400 dark:text-red-500 mb-4" />
+          <h3 className="text-xl font-medium text-gray-900 dark:text-white mb-2">No Favorite Books</h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">You haven't added any books to your favorites yet.</p>
+          <Link
+            to="/books"
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 inline-block"
+          >
+            Browse Books
+          </Link>
         </div>
       )}
     </div>

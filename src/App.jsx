@@ -22,6 +22,7 @@ import BookHistory from "./pages/books/BookHistory";
 import ProfilePage from "./pages/user/ProfilePage";
 import SettingsPage from "./pages/user/SettingsPage";
 import NotificationsPage from "./pages/user/NotificationsPage";
+import BookDetailPage from "./pages/books/BookDetailPage";
 
 // Protected route component
 const ProtectedRoute = ({ children }) => {
@@ -160,6 +161,15 @@ function AppWrapper() {
             element={
               <DashboardProtectedRoute>
                 <BooksPage />
+              </DashboardProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/books/:bookId"
+            element={
+              <DashboardProtectedRoute>
+                <BookDetailPage />
               </DashboardProtectedRoute>
             }
           />

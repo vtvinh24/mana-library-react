@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useContext } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../context/AuthProvider";
 import { Link } from "react-router-dom";
 import { FaSearch, FaFilter, FaTimes } from "react-icons/fa";
@@ -6,11 +6,11 @@ import BookCard from "../../components/BookCard";
 import Pagination from "../../components/common/Pagination";
 import Spinner from "../../components/Spinner";
 import BookFilters from "../../components/books/BooksFilters";
-import { BookContext } from "../../context/AppContext";
+import { useBook } from "../../context/BookProvider";
 
 const BooksPage = () => {
-  const { books, loading, error, pagination, getBooks, searchBooks } = useContext(BookContext);
-  const { isAuthenticated, user } = useAuth();
+  const { books, loading, error, pagination, getBooks, searchBooks, reserveBook } = useBook();
+  const { isAuthenticated } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
@@ -28,46 +28,33 @@ const BooksPage = () => {
 
   // Function to fetch books based on current state
   const fetchBooks = useCallback(async () => {
-    console.log("fetchBooks called with:", {
-      isSearchMode,
-      searchQuery,
-      currentPage,
-      filters,
-    });
-
     try {
       if (isSearchMode && searchQuery) {
-        console.log("Executing search with query:", searchQuery);
         await searchBooks(searchQuery, currentPage, 10);
       } else {
-        console.log("Fetching books with filters:", filters);
         await getBooks(currentPage, 10, filters);
       }
     } catch (err) {
-      console.error("Error in fetchBooks:", err);
+      // Error is handled by the context
     }
   }, [isSearchMode, searchQuery, currentPage, filters, getBooks, searchBooks]);
 
   // Initial data load
   useEffect(() => {
-    console.log("BooksPage mounted, fetching initial data");
     getBooks(1, 10, {});
   }, [getBooks]);
 
   // Fetch books when page changes
   useEffect(() => {
-    console.log("Page changed to:", currentPage);
     fetchBooks();
   }, [currentPage, fetchBooks]);
 
   // Load user favorites when authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      console.log("User is authenticated, loading favorites");
       const storedFavorites = JSON.parse(localStorage.getItem("favorites") || "[]");
       setFavorites(storedFavorites);
     } else {
-      console.log("User is not authenticated, clearing favorites");
       setFavorites([]);
     }
   }, [isAuthenticated]);
@@ -76,8 +63,6 @@ const BooksPage = () => {
   const handleSearch = useCallback(
     async (e) => {
       e.preventDefault();
-      console.log("Search form submitted with query:", searchQuery);
-
       setCurrentPage(1);
       setIsSearchMode(!!searchQuery);
 
@@ -91,12 +76,10 @@ const BooksPage = () => {
   );
 
   const handleFilterChange = (name, value) => {
-    console.log("Filter changed:", name, "=", value);
     setFilters((prev) => ({ ...prev, [name]: value }));
   };
 
   const applyFilters = async () => {
-    console.log("Applying filters:", filters);
     setCurrentPage(1);
     setIsSearchMode(false);
     await getBooks(1, 10, filters);
@@ -104,7 +87,6 @@ const BooksPage = () => {
   };
 
   const clearFilters = async () => {
-    console.log("Clearing filters");
     setFilters({
       title: "",
       author: "",
@@ -118,12 +100,10 @@ const BooksPage = () => {
   };
 
   const handlePageChange = (page) => {
-    console.log("Changing page to:", page);
     setCurrentPage(page);
   };
 
   const handleToggleFavorite = (bookId) => {
-    console.log("Toggle favorite for book:", bookId);
     if (!isAuthenticated) {
       setActionRequested("favorite");
       setShowLoginPrompt(true);
@@ -147,7 +127,6 @@ const BooksPage = () => {
   };
 
   const handleReserveBook = async (bookId) => {
-    console.log("Attempting to reserve book:", bookId);
     if (!isAuthenticated) {
       setActionRequested("reserve");
       setShowLoginPrompt(true);
@@ -157,12 +136,11 @@ const BooksPage = () => {
     try {
       const result = await reserveBook(bookId);
       if (result.success) {
-        alert(`Book reserved successfully! ${result.message}`);
+        alert(`Book reserved successfully! Reservation expires on ${new Date(result.expiresAt).toLocaleDateString()}`);
       } else {
         alert(`Failed to reserve book: ${result.error}`);
       }
     } catch (err) {
-      console.error("Error reserving book:", err);
       alert("Failed to reserve book. Please try again later.");
     }
   };
@@ -171,15 +149,6 @@ const BooksPage = () => {
     setShowLoginPrompt(false);
     setActionRequested(null);
   };
-
-  console.log("BooksPage render state:", {
-    booksCount: books?.length,
-    loading,
-    error,
-    pagination,
-    currentPage,
-    books,
-  });
 
   return (
     <div className="container mx-auto p-4">
@@ -215,7 +184,7 @@ const BooksPage = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by title, author, ISBN..."
-            className="flex-grow px-4 py-2 border rounded-l-md focus:outline-none focus:ring-2 focus:ring-purple-700"
+            className="flex-grow px-4 py-2 border rounded-l-md focus:outline-none focus:ring-2 focus:ring-purple-700 dark:bg-gray-700 dark:text-white dark:border-gray-600"
           />
           <button
             type="submit"
@@ -230,10 +199,10 @@ const BooksPage = () => {
       {showFilters && (
         <div className="mb-6 p-4 bg-gray-100 dark:bg-gray-800 rounded-md">
           <div className="flex justify-between mb-4">
-            <h2 className="text-lg font-semibold">Filters</h2>
+            <h2 className="text-lg font-semibold dark:text-white">Filters</h2>
             <button
               onClick={() => setShowFilters(false)}
-              className="text-gray-500 hover:text-gray-700"
+              className="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
             >
               <FaTimes />
             </button>
@@ -256,7 +225,7 @@ const BooksPage = () => {
             <div className="flex justify-end space-x-3">
               <button
                 onClick={closeLoginPrompt}
-                className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500"
               >
                 Cancel
               </button>
@@ -272,7 +241,7 @@ const BooksPage = () => {
       )}
 
       {/* Error display */}
-      {error && <div className="p-4 mb-4 bg-red-100 text-red-700 rounded-md">{error}</div>}
+      {error && <div className="p-4 mb-4 bg-red-100 text-red-700 rounded-md dark:bg-red-900/50 dark:text-red-200">{error}</div>}
 
       {/* Loading spinner */}
       {loading ? (

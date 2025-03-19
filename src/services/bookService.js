@@ -23,7 +23,6 @@ const bookService = {
         ...filters,
       });
       const response = await api.get(`/api/v1/books?${queryParams}`);
-      alert(1);
 
       return {
         books: response.data.data,
@@ -33,7 +32,8 @@ const bookService = {
         totalPages: response.data.pagination.pages,
       };
     } catch (error) {
-      throw error.response?.data || new Error("Network error");
+      console.error("Error fetching books:", error);
+      return { books: [], page: 1, limit: 10, total: 0, totalPages: 1 };
     }
   },
 
@@ -207,15 +207,18 @@ const bookService = {
    * Get user's borrowed books
    * @returns {Promise} - Borrowed books
    */
+  // In the getBorrowedBooks method
   getBorrowedBooks: async () => {
     try {
       const response = await api.get("/api/v1/books/borrowed");
       return {
-        books: response.data.data || [],
+        books: response.data.data || [], // Ensure we always return an array
         count: response.data.count || 0,
       };
     } catch (error) {
-      throw error.response?.data || new Error("Network error");
+      console.error("Error fetching borrowed books:", error);
+      // Return a consistent empty response rather than throwing
+      return { books: [], count: 0 };
     }
   },
 
@@ -231,7 +234,9 @@ const bookService = {
         count: response.data.count || 0,
       };
     } catch (error) {
-      throw error.response?.data || new Error("Network error");
+      console.error("Error fetching reserved books:", error);
+      // Return a consistent empty response rather than throwing
+      return { books: [], count: 0 };
     }
   },
 
@@ -307,7 +312,7 @@ const bookService = {
   importBooks: async (file) => {
     try {
       const formData = new FormData();
-      formData.append("booksFile", file); // Note: Server expects "booksFile" as file field name
+      formData.append("booksFile", file);
 
       const response = await api.post("/api/v1/books/import", formData, {
         headers: {
@@ -320,6 +325,32 @@ const bookService = {
         message: response.data.message,
         imported: parseInt(response.data.message.match(/\d+/)[0]),
         errors: response.data.errors,
+      };
+    } catch (error) {
+      throw error.response?.data || new Error("Network error");
+    }
+  },
+  /**
+   * Get book transaction history
+   * @param {Object} filters - Optional filters (type, startDate, endDate, userId)
+   * @param {Number} page - Page number
+   * @param {Number} limit - Number of transactions per page
+   * @returns {Promise} - Transaction history with pagination
+   */
+  getBookHistory: async (filters = {}, page = 1, limit = 20) => {
+    try {
+      const queryParams = new URLSearchParams({
+        page,
+        limit,
+        ...filters,
+      });
+      const response = await api.get(`/api/v1/books/history?${queryParams}`);
+      return {
+        transactions: response.data.results,
+        page: response.data.page,
+        limit: response.data.limit,
+        total: response.data.total,
+        totalPages: response.data.pages,
       };
     } catch (error) {
       throw error.response?.data || new Error("Network error");

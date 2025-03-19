@@ -22,13 +22,13 @@ const UserMenu = ({ user }) => {
         ) : (
           <FaUser className="text-lg mr-2" />
         )}
-        <span>{user?.profile?.firstName || "User"}</span>
+        <span>{user?.identifier?.username || "User"}</span>
       </button>
 
       {isOpen && (
         <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl z-10 border border-gray-200 dark:border-gray-700 overflow-hidden animate-fadeIn">
           <div className="p-3 border-b border-gray-200 dark:border-gray-700">
-            <p className="font-semibold text-sm text-gray-700 dark:text-gray-300">{user?.email || "Signed in user"}</p>
+            <p className="font-semibold text-sm text-gray-700 dark:text-gray-300">{user?.fullName || "Signed in user"}</p>
           </div>
           <div className="py-1">
             <Link
@@ -36,6 +36,7 @@ const UserMenu = ({ user }) => {
               className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
             >
               <FaUser className="mr-3 text-gray-500 dark:text-gray-400" /> Profile
+              {JSON.stringify(user)}
             </Link>
             <Link
               to="/settings"

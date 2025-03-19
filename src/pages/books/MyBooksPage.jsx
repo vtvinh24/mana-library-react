@@ -1,35 +1,49 @@
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { FaBook, FaBookmark, FaHistory, FaClock } from "react-icons/fa";
+import { FaBook, FaBookmark, FaHistory, FaClock, FaHeart } from "react-icons/fa";
 import Spinner from "../../components/Spinner";
-import BookContext from "../../context/BookProvider";
+import { useBook } from "../../context/BookProvider";
+import { useUser } from "../../context/UserProvider";
 
 const MyBooksPage = () => {
-  const { borrowedBooks, reservedBooks, loading, error, getBorrowedBooks, getReservedBooks } = useContext(BookContext);
-  const [favorites, setFavorites] = useState([]);
+  const { borrowedBooks, reservedBooks, loading, error, getBorrowedBooks, getReservedBooks, getBookHistory } = useBook();
+  const { favorites, getFavorites, loading: userLoading } = useUser();
   const [recentActivity, setRecentActivity] = useState([]);
+  const [loadingActivity, setLoadingActivity] = useState(false);
+  const [activityError, setActivityError] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
-      await Promise.all([getBorrowedBooks(), getReservedBooks()]);
+      try {
+        // Load borrowed and reserved books
+        await Promise.all([getBorrowedBooks(), getReservedBooks()]);
 
-      // Get favorites from localStorage (in a real app, this would come from an API)
-      const storedFavorites = JSON.parse(localStorage.getItem("favorites") || "[]");
-      setFavorites(storedFavorites);
+        // Get favorites from API
+        await getFavorites();
 
-      // Simulate recent activity (in a real app, this would come from an API)
-      // This is just placeholder data
-      setRecentActivity([
-        { type: "borrowed", title: "The Great Gatsby", date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) },
-        { type: "returned", title: "To Kill a Mockingbird", date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
-        { type: "favorite", title: "1984", date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) },
-      ]);
+        // Fetch transaction history
+        setLoadingActivity(true);
+        setActivityError(null);
+        try {
+          const history = await getBookHistory({ limit: 5 });
+          if (history && history.transactions) {
+            setRecentActivity(history.transactions);
+          }
+        } catch (err) {
+          console.error("Error fetching activity:", err);
+          setActivityError("Failed to load recent activity. Please try again later.");
+        } finally {
+          setLoadingActivity(false);
+        }
+      } catch (err) {
+        console.error("Error loading user books data:", err);
+      }
     };
 
     fetchData();
-  }, [getBorrowedBooks, getReservedBooks]);
+  }, [getBorrowedBooks, getReservedBooks, getBookHistory, getFavorites]);
 
-  if (loading && !borrowedBooks.length && !reservedBooks.length) {
+  if (loading || userLoading) {
     return (
       <div className="flex justify-center my-8">
         <Spinner />
@@ -41,7 +55,7 @@ const MyBooksPage = () => {
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">My Books Dashboard</h1>
 
-      {error && <div className="p-4 mb-4 bg-red-100 text-red-700 rounded-md">{error}</div>}
+      {error && <div className="p-4 mb-4 bg-red-100 text-red-700 rounded-md dark:bg-red-900/50 dark:text-red-200">{error}</div>}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -86,7 +100,7 @@ const MyBooksPage = () => {
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700">
             <div className="flex items-center">
               <div className="p-3 rounded-full bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300 mr-4">
-                <FaBookmark size={24} />
+                <FaHeart size={24} />
               </div>
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Favorites</p>
@@ -114,10 +128,10 @@ const MyBooksPage = () => {
             <FaClock className="mr-2" /> My Reserved Books
           </Link>
           <Link
-            to="/favorites"
+            to="/my-books/favorites"
             className="p-3 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-md flex items-center hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
           >
-            <FaBookmark className="mr-2" /> My Favorites
+            <FaHeart className="mr-2" /> My Favorites
           </Link>
           <Link
             to="/my-books/history"
@@ -131,7 +145,13 @@ const MyBooksPage = () => {
       {/* Recent Activity */}
       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
         <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">Recent Activity</h2>
-        {recentActivity.length > 0 ? (
+        {loadingActivity ? (
+          <div className="flex justify-center py-4">
+            <Spinner size="md" />
+          </div>
+        ) : activityError ? (
+          <div className="p-4 bg-red-100 text-red-700 rounded-md dark:bg-red-900/50 dark:text-red-200">{activityError}</div>
+        ) : recentActivity && recentActivity.length > 0 ? (
           <ul className="divide-y divide-gray-200 dark:divide-gray-700">
             {recentActivity.map((activity, index) => (
               <li
@@ -142,10 +162,11 @@ const MyBooksPage = () => {
                   {activity.type === "borrowed" && <span className="inline-flex bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs px-2 py-1 rounded mr-3">Borrowed</span>}
                   {activity.type === "returned" && <span className="inline-flex bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs px-2 py-1 rounded mr-3">Returned</span>}
                   {activity.type === "favorite" && <span className="inline-flex bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 text-xs px-2 py-1 rounded mr-3">Favorited</span>}
+                  {activity.type === "reserved" && <span className="inline-flex bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 text-xs px-2 py-1 rounded mr-3">Reserved</span>}
                   <div>
-                    <p className="font-medium text-gray-800 dark:text-gray-200">{activity.title}</p>
+                    <p className="font-medium text-gray-800 dark:text-gray-200">{activity.book?.title || activity.title}</p>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {activity.date.toLocaleDateString()} · {activity.date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      {new Date(activity.date).toLocaleDateString()} · {new Date(activity.date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                     </p>
                   </div>
                 </div>

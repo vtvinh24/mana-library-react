@@ -366,6 +366,29 @@ export const BookProvider = ({ children }) => {
     }
   }, [isAuthenticated]);
 
+  // Get book transaction history
+  const getBookHistory = useCallback(
+    async (filters = {}, page = 1, limit = 20) => {
+      if (!isAuthenticated) return { error: "Not authenticated" };
+
+      try {
+        setError(null);
+        console.log("Fetching book history with filters:", filters);
+
+        const response = await bookService.getBookHistory(filters, page, limit);
+        console.log("Book history response:", response);
+
+        return response;
+      } catch (err) {
+        console.error("Error fetching book history:", err);
+        const message = err.message || "Failed to fetch book history";
+        setError(message);
+        return { error: message, transactions: [] };
+      }
+    },
+    [isAuthenticated]
+  );
+
   // Get books borrowed by specific user (admin/librarian)
   const getUserBorrowedBooks = useCallback(
     async (userId) => {
@@ -443,6 +466,7 @@ export const BookProvider = ({ children }) => {
     getReservedBooks,
     getUserBorrowedBooks,
     getUserReservedBooks,
+    getBookHistory,
   };
 
   return <BookContext.Provider value={value}>{children}</BookContext.Provider>;

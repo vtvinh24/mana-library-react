@@ -25,7 +25,6 @@ const Sidebar = ({ isOpen }) => {
         >
           <FaBook className="mr-2" /> Browse Books
         </NavLink>
-
         {/* User specific links */}
         <div className="sidebar-heading">My Library</div>
         <NavLink
@@ -41,12 +40,12 @@ const Sidebar = ({ isOpen }) => {
         >
           <FaBook className="mr-2" /> Borrowed Books
         </NavLink>
-        <NavLink
+        {/* <NavLink
           to="/my-books/reserved"
           className="sidebar-link"
         >
           <FaBookmark className="mr-2" /> Reserved Books
-        </NavLink>
+        </NavLink> */}
         <NavLink
           to="/my-books/favorites"
           className="sidebar-link"
@@ -59,7 +58,6 @@ const Sidebar = ({ isOpen }) => {
         >
           <FaHistory className="mr-2" /> History
         </NavLink>
-
         {/* User profile links */}
         <div className="sidebar-heading">Account</div>
         <NavLink
@@ -68,14 +66,13 @@ const Sidebar = ({ isOpen }) => {
         >
           <FaUserCircle className="mr-2" /> Profile
         </NavLink>
-        <NavLink
+        {/* <NavLink
           to="/notifications"
           className="sidebar-link"
         >
           <FaBell className="mr-2" /> Notifications
-        </NavLink>
-
-        {/* Librarian links */}
+        </NavLink> */}
+        {/* Librarian links
         {(role === "librarian" || role === "admin") && (
           <>
             <div className="sidebar-heading">Librarian</div>
@@ -104,10 +101,9 @@ const Sidebar = ({ isOpen }) => {
               <FaBookmark className="mr-2" /> Reservations
             </NavLink>
           </>
-        )}
-
+        )} */}
         {/* Admin links */}
-        {role === "admin" && (
+        {/* {role === "admin" && (
           <>
             <div className="sidebar-heading">Admin</div>
             <NavLink
@@ -141,7 +137,7 @@ const Sidebar = ({ isOpen }) => {
               <FaCog className="mr-2" /> Settings
             </NavLink>
           </>
-        )}
+        )} */}
       </nav>
     </aside>
   );
