@@ -8,7 +8,7 @@ const bookService = {
    * Get all books with filtering, pagination and sorting
    * @param {Number} page - Page number
    * @param {Number} limit - Number of books per page
-   * @param {Object} filters - Optional filters (title, author, genre, status, language)
+   * @param {Object} filters - Optional filters (title, author, ISBN, publisher, genre, status, language, publicationYear, availableOnly)
    * @param {String} sortBy - Field to sort by
    * @param {String} sortOrder - Sort direction (asc or desc)
    * @returns {Promise} - Books data with pagination
@@ -45,23 +45,25 @@ const bookService = {
   getBook: async (bookId) => {
     try {
       const response = await api.get(`/api/v1/books/${bookId}`);
-      return response.data.book;
-    } catch (error) {
-      throw error.response?.data || new Error("Network error");
-    }
-  },
 
-  /**
-   * Create a new book (admin/librarian)
-   * @param {Object} bookData - Book data
-   * @returns {Promise} - Created book
-   */
-  createBook: async (bookData) => {
-    try {
-      const response = await api.post("/api/v1/books", bookData);
-      return response.data;
+      // The server now returns the book directly with availability information
+      const bookData = response.data;
+
+      if (!bookData) {
+        throw new Error("Invalid book data received from server");
+      }
+
+      // Return the book with server-provided availability information
+      return {
+        ...bookData,
+        // These properties are used by existing components
+        isAvailable: bookData.availability.isAvailable,
+        availableCopies: bookData.availability.available,
+        totalCopies: bookData.availability.total,
+      };
     } catch (error) {
-      throw error.response?.data || new Error("Network error");
+      console.error(`Error fetching book ${bookId}:`, error);
+      throw error.response?.data || new Error(error.message || "Network error");
     }
   },
 

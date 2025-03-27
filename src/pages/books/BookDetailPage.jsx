@@ -1,54 +1,35 @@
-import { useState, useEffect } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
-import { FaArrowLeft, FaBook, FaBookmark, FaHeart, FaRegHeart } from "react-icons/fa";
-import Spinner from "../../components/Spinner";
+import React, { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { useBook } from "../../context/BookProvider";
 import { useAuth } from "../../context/AuthProvider";
+import { FaArrowLeft, FaCalendarAlt, FaBook, FaHeart, FaRegHeart, FaLanguage } from "react-icons/fa";
+import Spinner from "../../components/Spinner";
 
 const BookDetailPage = () => {
   const { bookId } = useParams();
   const navigate = useNavigate();
-  const { book, loading, error, getBook, borrowBook, reserveBook, borrowedBooks, reservedBooks } = useBook();
+  const { book, loading, error, getBook, borrowBook, reserveBook } = useBook();
   const { isAuthenticated } = useAuth();
 
   const [actionLoading, setActionLoading] = useState(false);
   const [message, setMessage] = useState(null);
   const [isFavorite, setIsFavorite] = useState(false);
   const [imageError, setImageError] = useState(false);
-  // Add local states to track book status immediately after user actions
-  const [localBorrowed, setLocalBorrowed] = useState(false);
-  const [localReserved, setLocalReserved] = useState(false);
 
   // Get book details on mount
   useEffect(() => {
-    const fetchBookDetails = async () => {
-      await getBook(bookId);
-    };
-
-    fetchBookDetails();
-
-    // Check if this book is in favorites
-    const storedFavorites = JSON.parse(localStorage.getItem("favorites") || "[]");
-    setIsFavorite(storedFavorites.includes(bookId));
-
-    // Reset image error state and local status when book ID changes
-    setImageError(false);
-    setLocalBorrowed(false);
-    setLocalReserved(false);
+    if (bookId) {
+      getBook(bookId);
+    }
   }, [bookId, getBook]);
 
-  // Set initial local borrowed/reserved state based on context
+  // Check if book is in favorites when book data loads
   useEffect(() => {
-    if (borrowedBooks && borrowedBooks.length > 0) {
-      const borrowed = borrowedBooks.some((item) => item.book && item.book._id === bookId);
-      setLocalBorrowed(borrowed);
+    if (bookId) {
+      const storedFavorites = JSON.parse(localStorage.getItem("favorites") || "[]");
+      setIsFavorite(storedFavorites.includes(bookId));
     }
-
-    if (reservedBooks && reservedBooks.length > 0) {
-      const reserved = reservedBooks.some((item) => item.book && item.book._id === bookId);
-      setLocalReserved(reserved);
-    }
-  }, [borrowedBooks, reservedBooks, bookId]);
+  }, [bookId]);
 
   // Handle image loading error
   const handleImageError = () => {
@@ -58,171 +39,131 @@ const BookDetailPage = () => {
   // Handle borrow action
   const handleBorrow = async () => {
     if (!isAuthenticated) {
-      navigate(`/login?redirect=/books/${bookId}`);
+      setMessage({ text: "Please sign in to borrow books", type: "error" });
       return;
     }
 
-    setActionLoading(true);
     try {
+      setActionLoading(true);
+      setMessage(null);
+
       const result = await borrowBook(bookId);
+
       if (result.success) {
-        // Update local state immediately
-        setLocalBorrowed(true);
+        // Update book details after successful borrow
+        await getBook(bookId);
         setMessage({
-          type: "success",
           text: `Book borrowed successfully! Due date: ${new Date(result.dueDate).toLocaleDateString()}`,
+          type: "success",
         });
       } else {
-        setMessage({
-          type: "error",
-          text: result.error || "Failed to borrow book.",
-        });
+        setMessage({ text: result.error || "Failed to borrow book", type: "error" });
       }
     } catch (err) {
-      setMessage({
-        type: "error",
-        text: "An error occurred while processing your request.",
-      });
+      setMessage({ text: "Failed to borrow book. Please try again.", type: "error" });
     } finally {
       setActionLoading(false);
-      // Clear message after 5 seconds
-      setTimeout(() => setMessage(null), 5000);
     }
   };
 
   // Handle reserve action
   const handleReserve = async () => {
     if (!isAuthenticated) {
-      navigate(`/login?redirect=/books/${bookId}`);
+      setMessage({ text: "Please sign in to reserve books", type: "error" });
       return;
     }
 
-    setActionLoading(true);
     try {
+      setActionLoading(true);
+      setMessage(null);
+
       const result = await reserveBook(bookId);
+
       if (result.success) {
-        // Update local state immediately
-        setLocalReserved(true);
+        // Update book details after successful reservation
+        await getBook(bookId);
         setMessage({
-          type: "success",
           text: `Book reserved successfully! Reservation expires on: ${new Date(result.expiresAt).toLocaleDateString()}`,
+          type: "success",
         });
       } else {
-        setMessage({
-          type: "error",
-          text: result.error || "Failed to reserve book.",
-        });
+        setMessage({ text: result.error || "Failed to reserve book", type: "error" });
       }
     } catch (err) {
-      setMessage({
-        type: "error",
-        text: "An error occurred while processing your request.",
-      });
+      setMessage({ text: "Failed to reserve book. Please try again.", type: "error" });
     } finally {
       setActionLoading(false);
-      // Clear message after 5 seconds
-      setTimeout(() => setMessage(null), 5000);
     }
   };
 
   // Toggle favorite status
   const handleToggleFavorite = () => {
-    if (!isAuthenticated) {
-      navigate(`/login?redirect=/books/${bookId}`);
-      return;
-    }
-
-    const storedFavorites = JSON.parse(localStorage.getItem("favorites") || "[]");
-    let updatedFavorites;
+    let favorites = JSON.parse(localStorage.getItem("favorites") || "[]");
 
     if (isFavorite) {
-      // Remove from favorites
-      updatedFavorites = storedFavorites.filter((id) => id !== bookId);
-      setMessage({ type: "success", text: "Removed from favorites" });
+      favorites = favorites.filter((id) => id !== bookId);
     } else {
-      // Add to favorites
-      updatedFavorites = [...storedFavorites, bookId];
-      setMessage({ type: "success", text: "Added to favorites" });
+      favorites.push(bookId);
     }
 
-    localStorage.setItem("favorites", JSON.stringify(updatedFavorites));
+    localStorage.setItem("favorites", JSON.stringify(favorites));
     setIsFavorite(!isFavorite);
-
-    // Clear message after 3 seconds
-    setTimeout(() => setMessage(null), 3000);
   };
 
-  // Check if book is already borrowed by user (using both context and local state)
-  const isBookBorrowed = () => {
-    return localBorrowed || borrowedBooks.some((item) => item.book && item.book._id === bookId);
-  };
-
-  // Check if book is already reserved by user (using both context and local state)
-  const isBookReserved = () => {
-    return localReserved || reservedBooks.some((item) => item.book && item.book._id === bookId);
-  };
-
-  // Get action button based on book status and user's actions
+  // Get action button based on book status and user's interactions
   const getActionButton = () => {
-    if (isBookBorrowed()) {
+    if (!book) return null;
+
+    // Use the server-provided user interaction data
+    if (book.userInteractions?.isBorrowed) {
       return (
-        <Link
-          to="/my-books/borrowed"
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+        <button
+          disabled
+          className="bg-gray-500 text-white py-2 px-4 rounded disabled:opacity-70 cursor-not-allowed"
         >
-          View My Borrowed Books
-        </Link>
+          Currently Borrowed
+        </button>
       );
     }
 
-    if (isBookReserved()) {
+    if (book.userInteractions?.isReserved) {
       return (
-        <Link
-          to="/my-books/reserved"
-          className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700"
+        <button
+          disabled
+          className="bg-gray-500 text-white py-2 px-4 rounded disabled:opacity-70 cursor-not-allowed"
         >
-          View My Reserved Books
-        </Link>
+          Reserved
+        </button>
       );
     }
 
-    if (book?.status === "available") {
+    // Use the server-provided availability information
+    if (book.availability?.isAvailable) {
       return (
         <button
           onClick={handleBorrow}
           disabled={actionLoading}
-          className={`px-4 py-2 rounded-md text-white ${actionLoading ? "bg-gray-500 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"}`}
+          className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded disabled:opacity-70"
         >
-          {actionLoading ? "Processing..." : "Borrow Book"}
+          {actionLoading ? <Spinner size="sm" /> : "Borrow"}
         </button>
       );
-    }
-
-    if (book?.status === "borrowed") {
+    } else {
       return (
         <button
           onClick={handleReserve}
-          disabled={true}
-          className={`px-4 py-2 rounded-md text-white bg-gray-500 cursor-not-allowed`}
+          disabled={actionLoading}
+          className="bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-4 rounded disabled:opacity-70"
         >
-          Not Available
+          {actionLoading ? <Spinner size="sm" /> : "Reserve"}
         </button>
       );
     }
-
-    return (
-      <button
-        disabled={true}
-        className="px-4 py-2 bg-gray-500 text-white rounded-md cursor-not-allowed"
-      >
-        Not Available
-      </button>
-    );
   };
 
   if (loading && !book) {
     return (
-      <div className="flex justify-center my-8">
+      <div className="flex justify-center items-center min-h-screen">
         <Spinner size="lg" />
       </div>
     );
@@ -230,39 +171,21 @@ const BookDetailPage = () => {
 
   return (
     <div className="container mx-auto p-4">
-      <div className="mb-6 flex justify-between items-center">
-        <Link
-          to="/books"
-          className="flex items-center text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-        >
-          <FaArrowLeft className="mr-1" /> Back to Books
-        </Link>
+      {/* Back Button */}
+      <button
+        onClick={() => navigate(-1)}
+        className="mb-4 text-blue-600 dark:text-blue-400 hover:underline flex items-center"
+      >
+        <FaArrowLeft className="mr-2" /> Back to Books
+      </button>
 
-        {isAuthenticated && (
-          <button
-            onClick={handleToggleFavorite}
-            className="flex items-center px-3 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
-          >
-            {isFavorite ? (
-              <>
-                <FaHeart className="text-red-500 mr-2" /> Favorited
-              </>
-            ) : (
-              <>
-                <FaRegHeart className="mr-2" /> Add to Favorites
-              </>
-            )}
-          </button>
-        )}
-      </div>
+      {/* Error Message */}
+      {error && <div className="mb-4 p-4 bg-red-100 text-red-700 rounded-md dark:bg-red-900/50 dark:text-red-200">{error}</div>}
 
-      {/* Error display */}
-      {error && <div className="p-4 mb-4 bg-red-100 text-red-700 rounded-md dark:bg-red-900/50 dark:text-red-200">{error}</div>}
-
-      {/* Action message */}
+      {/* Success/Error Message */}
       {message && (
         <div
-          className={`p-4 mb-4 rounded-md ${
+          className={`mb-4 p-4 rounded-md ${
             message.type === "success" ? "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-200" : "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-200"
           }`}
         >
@@ -271,148 +194,134 @@ const BookDetailPage = () => {
       )}
 
       {book && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-lg">
           <div className="md:flex">
-            {/* Book cover */}
+            {/* Book Cover */}
             <div className="md:w-1/3 p-6 flex justify-center">
-              {book.coverImage && !imageError ? (
-                <img
-                  src={book.coverImage}
-                  alt={`Cover of ${book.title}`}
-                  className="w-full max-w-xs object-cover rounded-md shadow-md"
-                  onError={handleImageError}
-                />
-              ) : (
-                <div className="w-full max-w-xs h-96 flex items-center justify-center bg-gray-200 dark:bg-gray-700 rounded-md shadow-md">
-                  <FaBook
-                    size={64}
-                    className="text-gray-400"
+              <div className="w-full max-w-sm aspect-[2/3] bg-gray-100 dark:bg-gray-700 rounded-md overflow-hidden shadow">
+                {book.coverImage && !imageError ? (
+                  <img
+                    src={book.coverImage}
+                    alt={`Cover of ${book.title}`}
+                    className="w-full h-full object-cover"
+                    onError={handleImageError}
                   />
-                </div>
-              )}
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <FaBook
+                      size={64}
+                      className="text-gray-400"
+                    />
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Book details */}
+            {/* Book Details */}
             <div className="md:w-2/3 p-6">
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{book.title}</h1>
-              <p className="text-xl text-gray-600 dark:text-gray-300 mb-4">by {book.author}</p>
+              <div className="flex justify-between items-start">
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{book.title}</h1>
+                  <h2 className="text-xl text-gray-700 dark:text-gray-300 mb-4">{book.author}</h2>
+                </div>
 
-              <div className="flex flex-wrap items-center mb-6">
-                <span
-                  className={`px-3 py-1 rounded-full text-sm font-medium mr-2 mb-2 ${
-                    book.status === "available"
-                      ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                      : book.status === "borrowed"
-                      ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-                      : "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-                  }`}
+                {/* Favorite button */}
+                <button
+                  onClick={handleToggleFavorite}
+                  className="p-2 bg-white/90 dark:bg-black/50 hover:bg-white dark:hover:bg-black rounded-full shadow"
                 >
-                  {book.status.charAt(0).toUpperCase() + book.status.slice(1)}
-                </span>
-
-                {book.genre &&
-                  book.genre.map((g, index) => (
-                    <span
-                      key={index}
-                      className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 px-3 py-1 rounded-full text-sm font-medium mr-2 mb-2"
-                    >
-                      {g}
-                    </span>
-                  ))}
+                  {isFavorite ? (
+                    <FaHeart
+                      className="text-red-500"
+                      size={20}
+                    />
+                  ) : (
+                    <FaRegHeart
+                      className="text-gray-500 dark:text-gray-400"
+                      size={20}
+                    />
+                  )}
+                </button>
               </div>
 
-              {book.description && (
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">Description</h3>
-                  <p className="text-gray-600 dark:text-gray-300">{book.description}</p>
+              {/* Availability Status */}
+              <div className="mb-6">
+                <span
+                  className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${
+                    book.availability?.isAvailable ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                  }`}
+                >
+                  {book.availability?.isAvailable ? "Available" : "Not Available"}
+                </span>
+
+                <span className="ml-2 text-gray-600 dark:text-gray-400">
+                  {book.availability?.available} of {book.availability?.total} copies available
+                </span>
+              </div>
+
+              {/* Reservation Status */}
+              {book.userInteractions?.isReserved && book.userInteractions?.reservation && (
+                <div className="mb-6 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
+                  <h3 className="font-semibold text-blue-700 dark:text-blue-300">Your Reservation</h3>
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    Status: <span className="font-medium">{book.userInteractions.reservation.status === "ready" ? "Ready for pickup" : "Pending"}</span>
+                  </p>
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    Expires: <span className="font-medium">{new Date(book.userInteractions.reservation.expiresAt).toLocaleDateString()}</span>
+                  </p>
                 </div>
               )}
 
+              {/* Book Metadata */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">Details</h3>
-                  <dl>
-                    {book.ISBN && (
-                      <>
-                        <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">ISBN</dt>
-                        <dd className="mb-2 text-gray-700 dark:text-gray-300">{book.ISBN}</dd>
-                      </>
-                    )}
-
-                    {book.publisher && (
-                      <>
-                        <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Publisher</dt>
-                        <dd className="mb-2 text-gray-700 dark:text-gray-300">{book.publisher}</dd>
-                      </>
-                    )}
-
-                    {book.publicationYear && (
-                      <>
-                        <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Publication Year</dt>
-                        <dd className="mb-2 text-gray-700 dark:text-gray-300">{book.publicationYear}</dd>
-                      </>
-                    )}
-
-                    {book.pages && (
-                      <>
-                        <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Pages</dt>
-                        <dd className="mb-2 text-gray-700 dark:text-gray-300">{book.pages}</dd>
-                      </>
-                    )}
-                  </dl>
+                <div className="flex items-center">
+                  <FaLanguage className="text-gray-500 dark:text-gray-400 mr-2" />
+                  <span className="text-gray-900 dark:text-white">Language: </span>
+                  <span className="ml-1 text-gray-700 dark:text-gray-300">{book.language || "Unknown"}</span>
                 </div>
 
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">Library Info</h3>
-                  <dl>
-                    {book.language && (
-                      <>
-                        <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Language</dt>
-                        <dd className="mb-2 text-gray-700 dark:text-gray-300">{book.language}</dd>
-                      </>
-                    )}
+                <div className="flex items-center">
+                  <span className="text-gray-900 dark:text-white">ISBN: </span>
+                  <span className="ml-1 text-gray-700 dark:text-gray-300">{book.ISBN || "N/A"}</span>
+                </div>
 
-                    {book.location && (
-                      <>
-                        <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Location</dt>
-                        <dd className="mb-2 text-gray-700 dark:text-gray-300">{book.location}</dd>
-                      </>
-                    )}
+                <div className="flex items-center">
+                  <FaCalendarAlt className="text-gray-500 dark:text-gray-400 mr-2" />
+                  <span className="text-gray-900 dark:text-white">Published: </span>
+                  <span className="ml-1 text-gray-700 dark:text-gray-300">{book.publicationYear || "Unknown"}</span>
+                </div>
 
-                    {book.deweyDecimal && (
-                      <>
-                        <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Dewey Decimal</dt>
-                        <dd className="mb-2 text-gray-700 dark:text-gray-300">{book.deweyDecimal}</dd>
-                      </>
-                    )}
-
-                    {book.condition && (
-                      <>
-                        <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Condition</dt>
-                        <dd className="mb-2 text-gray-700 dark:text-gray-300">{book.condition}</dd>
-                      </>
-                    )}
-                  </dl>
+                <div className="flex items-center">
+                  <span className="text-gray-900 dark:text-white">Publisher: </span>
+                  <span className="ml-1 text-gray-700 dark:text-gray-300">{book.publisher || "Unknown"}</span>
                 </div>
               </div>
 
-              {book.tags && book.tags.length > 0 && (
+              {/* Genre Tags */}
+              {book.genre && book.genre.length > 0 && (
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">Tags</h3>
-                  <div className="flex flex-wrap">
-                    {book.tags.map((tag, index) => (
+                  <span className="text-gray-900 dark:text-white font-medium">Genres: </span>
+                  <div className="flex flex-wrap mt-1">
+                    {book.genre.map((genre, index) => (
                       <span
                         key={index}
-                        className="bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 px-2 py-1 rounded text-sm mr-2 mb-2"
+                        className="mr-2 mb-2 px-2 py-1 text-xs bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 rounded-full"
                       >
-                        {tag}
+                        {genre}
                       </span>
                     ))}
                   </div>
                 </div>
               )}
 
-              <div className="mt-8">{getActionButton()}</div>
+              {/* Book Synopsis */}
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Synopsis</h3>
+                <p className="text-gray-700 dark:text-gray-300">{book.description || "No description available."}</p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex space-x-4">{getActionButton()}</div>
             </div>
           </div>
         </div>

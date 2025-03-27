@@ -16,9 +16,13 @@ const BooksPage = () => {
   const [filters, setFilters] = useState({
     title: "",
     author: "",
+    ISBN: "",
+    publisher: "",
     genre: "",
     status: "",
     language: "",
+    publicationYear: "",
+    availableOnly: false,
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [isSearchMode, setIsSearchMode] = useState(false);
@@ -90,9 +94,13 @@ const BooksPage = () => {
     setFilters({
       title: "",
       author: "",
+      ISBN: "",
+      publisher: "",
       genre: "",
       status: "",
       language: "",
+      publicationYear: "",
+      availableOnly: false,
     });
     setCurrentPage(1);
     setIsSearchMode(false);
@@ -260,7 +268,9 @@ const BooksPage = () => {
                   isFavorite={favorites.includes(book._id)}
                   onToggleFavorite={() => handleToggleFavorite(book._id)}
                   onReserve={() => handleReserveBook(book._id)}
-                  isAvailable={book.status === "available"}
+                  isAvailable={book.isAvailable}
+                  availableCopies={book.availableCopies}
+                  totalCopies={book.totalCopies}
                 />
               ))}
             </div>

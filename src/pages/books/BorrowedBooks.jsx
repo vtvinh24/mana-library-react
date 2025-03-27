@@ -128,7 +128,7 @@ const BorrowedBooks = () => {
                   <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-2">
                     <div className="flex items-center">
                       <span className="text-gray-500 dark:text-gray-400 mr-2">Borrowed on:</span>
-                      <span className="font-medium">{item && item.borrowDate ? formatDate(item.borrowDate) : "Loading..."}</span>
+                      <span className="font-medium">{item && item.borrowedAt ? formatDate(item.borrowedAt) : "Loading..."}</span>
                     </div>
 
                     <div className="flex items-center">

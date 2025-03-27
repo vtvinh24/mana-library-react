@@ -2,7 +2,7 @@ import { useState } from "react";
 import { FaBook, FaHeart, FaRegHeart } from "react-icons/fa";
 import { Link } from "react-router-dom";
 
-const BookCard = ({ book, isFavorite, onToggleFavorite, onReserve, isAvailable }) => {
+const BookCard = ({ book, isFavorite, onToggleFavorite, onReserve, isAvailable, availableCopies, totalCopies }) => {
   const [imageError, setImageError] = useState(false);
 
   // Handle clicking the favorite button without navigating
@@ -64,14 +64,10 @@ const BookCard = ({ book, isFavorite, onToggleFavorite, onReserve, isAvailable }
           <div className="absolute bottom-2 left-2">
             <span
               className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                book.status === "available"
-                  ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                  : book.status === "borrowed"
-                  ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-                  : "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                isAvailable ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
               }`}
             >
-              {book.status.charAt(0).toUpperCase() + book.status.slice(1)}
+              {isAvailable ? "Available" : "Unavailable"}
             </span>
           </div>
         </div>
@@ -96,31 +92,30 @@ const BookCard = ({ book, isFavorite, onToggleFavorite, onReserve, isAvailable }
             </div>
           )}
 
-          {/* Reserve Button (only for borrowed books) */}
-          {/* {book.status === "borrowed" && onReserve && (
-            <div className="mt-auto pt-3"> */}
-          {/* <button
-                onClick={handleReserve}
-                className="w-full bg-yellow-500 hover:bg-yellow-600 text-white py-1 px-3 rounded text-sm font-medium transition-colors"
-              >
-                Reserve
-              </button> */}
-          {/* A disabled button labeled Borrowed*/}
-          {/* <button
-                disabled
-                className="w-full bg-gray-700 text-white py-1 px-3 rounded text-sm font-medium"
-              >
-                Borrowed
-              </button>
+          {/* Availability */}
+          <div className="mt-auto pt-3">
+            <div className="w-full text-sm text-gray-600 dark:text-gray-300">
+              {availableCopies !== undefined && totalCopies !== undefined && (
+                <span>
+                  {availableCopies} of {totalCopies} copies available
+                </span>
+              )}
             </div>
-          )} */}
 
-          {/* Borrow Now Button (only for available books) */}
-          {/* {isAvailable && book.status === "available" && (
-            <div className="mt-auto pt-3">
-              <span className="block w-full bg-blue-600 text-center text-white py-1 px-3 rounded text-sm font-medium">Available</span>
+            {/* Action buttons */}
+            <div className="mt-2">
+              {isAvailable ? (
+                <button
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded text-sm font-medium transition-colors"
+                  onClick={handleReserve}
+                >
+                  Borrow
+                </button>
+              ) : (
+                <button className="w-full bg-gray-500 hover:bg-gray-600 text-white py-1 px-3 rounded text-sm font-medium transition-colors">Not available</button>
+              )}
             </div>
-          )} */}
+          </div>
         </div>
       </div>
     </Link>

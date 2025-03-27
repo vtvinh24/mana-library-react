@@ -25,6 +25,7 @@ export const BookProvider = ({ children }) => {
   }, []);
 
   // Get all books with filtering
+  // Get all books with filtering
   const getBooks = useCallback(async (page = 1, limit = 10, filters = {}) => {
     try {
       setLoading(true);
@@ -35,8 +36,16 @@ export const BookProvider = ({ children }) => {
         throw new Error("Invalid response from books API");
       }
 
+      // Process books to expose availability information directly
+      const processedBooks = response.books.map((book) => ({
+        ...book,
+        isAvailable: book.availableCopies > 0,
+        availableCopies: book.availableCopies,
+        totalCopies: book.totalCopies,
+      }));
+
       // Set the books from the data array from the server
-      setBooks(response.books);
+      setBooks(processedBooks);
 
       // Set pagination data
       setPagination({
